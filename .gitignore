@@ -1,0 +1,11 @@
+# Ignore build files
+*.o
+project
+tests_runner
+
+# auto-generated files
+.DS_Store
+*.log
+*.tmp
+*.out
+*.exe
