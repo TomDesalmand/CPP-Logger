@@ -1,5 +1,4 @@
 #include "../../include/test_common.hpp"
-#include <string>
 #include <cassert>
 
 // Declare inline callables for the log types used by this test.

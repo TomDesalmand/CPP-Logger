@@ -1,5 +1,5 @@
-#include <cassert>
 #include "../include/test_common.hpp"
+#include <cassert>
 
 extern bool test_create_and_call_macros();
 extern bool test_ansi_helpers();
