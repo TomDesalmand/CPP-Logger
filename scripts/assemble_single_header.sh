@@ -1,0 +1,147 @@
+#!/bin/sh
+# assemble_single_header.sh
+# Helper script to assemble a single-header amalgamation for CPP-Logger.
+#
+# Usage:
+#   assemble_single_header.sh <output-file> "<headers...>" "<sources...>"
+#
+
+set -euo pipefail
+
+if [ "${1:-}" = "" ]; then
+  cat <<'USAGE' >&2
+Usage:
+  assemble_single_header.sh <output-file> "<headers...>" "<sources...>"
+
+Example:
+  assemble_single_header.sh generated/cpp_logger.hpp "include/logging.hpp include/utils.hpp" "src/logging.cpp src/utils.cpp"
+USAGE
+  exit 2
+fi
+
+OUT="$1"
+HEADERS="${2:-}"
+SOURCES="${3:-}"
+
+OUTDIR=$(dirname -- "$OUT")
+[ -n "$OUTDIR" ] && mkdir -p -- "$OUTDIR"
+
+exec 1> "$OUT"
+
+_put() { printf '%s\n' "$*"; }
+_put "// Amalgamated single-header for CPP-Logger"
+_put "#ifndef CPP_LOGGER_SINGLE_HPP"
+_put "#define CPP_LOGGER_SINGLE_HPP"
+_put ""
+
+_put "// ---- Public headers (include/*.hpp) ----"
+
+if [ -z "$HEADERS" ]; then
+  ordered=""
+else
+  pending="$HEADERS"
+  ordered=""
+
+  while [ -n "$pending" ]; do
+    made=0
+    new_pending=""
+
+    for h in $pending; do
+      deps=$(sed -n 's/^[[:space:]]*#include[[:space:]]*"\(.*\)"/\1/p' "$h" 2>/dev/null | sed 's|.*/||')
+
+      skip=0
+      for d in $deps; do
+        if [ -f "include/$d" ]; then
+          found=0
+          for p in $pending; do
+            if [ "$p" = "include/$d" ]; then
+              found=1
+              break
+            fi
+          done
+          if [ "$found" -eq 1 ]; then
+            skip=1
+            break
+          fi
+        fi
+      done
+
+      if [ "$skip" -eq 0 ]; then
+        ordered="$ordered $h"
+        made=1
+      else
+        new_pending="$new_pending $h"
+      fi
+    done
+
+    if [ "$made" -eq 0 ]; then
+      ordered="$ordered $pending"
+      break
+    fi
+
+    pending="$new_pending"
+  done
+fi
+
+for f in $ordered; do
+  if [ -f "$f" ]; then
+    _put "// ===== Begin: $f ====="
+    awk '
+      { a[NR] = $0; n = NR }
+      END {
+        guard_idx = 0; guard_define = 0; guard_macro = ""
+        max_scan = (n < 50 ? n : 50)
+        # look for include-guard: #ifndef MACRO followed shortly by #define MACRO
+        for (i = 1; i <= max_scan; i++) {
+          if (a[i] ~ /^[[:space:]]*#ifndef[[:space:]]+[A-Za-z_][A-Za-z_0-9_]*[[:space:]]*$/) {
+            tmp = a[i]
+            gsub(/^[[:space:]]*#ifndef[[:space:]]*/, "", tmp)
+            gsub(/[[:space:]]*$/, "", tmp)
+            macro = tmp
+            for (j = i+1; j <= i+5 && j <= n; j++) {
+              # match a #define with the same macro
+              if (a[j] ~ ("^[[:space:]]*#define[[:space:]]+" macro "[[:space:]]*$")) {
+                guard_idx = i
+                guard_define = j
+                guard_macro = macro
+                break
+              }
+            }
+            if (guard_idx) break
+          }
+        }
+        # find last #endif that follows the guard (if found), otherwise the last #endif
+        endif_idx = 0
+        for (k = n; k >= 1; k--) {
+          if (a[k] ~ /^[[:space:]]*#endif([[:space:]]*(\/\/|\/\*).*?)?$/) {
+            if (guard_idx && k > guard_define) { endif_idx = k; break }
+            else if (!guard_idx) { endif_idx = k; break }
+          }
+        }
+        # print lines, skipping only: the include-guard #ifndef, its #define, and the matching trailing #endif;
+        # also skip local #include "..." and #pragma once lines
+        for (i = 1; i <= n; i++) {
+          if (i == guard_idx || i == guard_define || (endif_idx && i == endif_idx)) continue
+          if (a[i] ~ /^[[:space:]]*#include[[:space:]]*"[^\"]*"$/) continue
+          if (a[i] ~ /^[[:space:]]*#pragma[[:space:]]+once[[:space:]]*$/) continue
+          print a[i]
+        }
+      }' "$f"
+    _put "// ===== End: $f ====="
+    _put ""
+  fi
+done
+
+_put "// ---- Sources (src/*.cpp) ----"
+
+for f in $SOURCES; do
+  if [ -f "$f" ]; then
+    _put "// ===== Begin: $f ====="
+    sed -E '/^[[:space:]]*#include[[:space:]]*"[^\"]*"/d' "$f" | \
+      sed -E '/^[[:space:]]*(template|using|struct|class|namespace|#)/! s@^([[:space:]]*)([A-Za-z_][A-Za-z_0-9:<>&* \t]*[[:space:]]+[A-Za-z_][A-Za-z_0-9:<>]*[[:space:]]*\(.*\)[[:space:]]*\{)@\1inline \2@'
+    _put "// ===== End: $f ====="
+    _put ""
+  fi
+done
+
+_put "#endif // CPP_LOGGER_SINGLE_HPP"

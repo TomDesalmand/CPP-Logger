@@ -1,5 +1,4 @@
 #include "../../include/test_common.hpp"
-#include <string>
 #include <cassert>
 
 using namespace cpp_logging;

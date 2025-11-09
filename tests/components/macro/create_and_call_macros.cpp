@@ -1,5 +1,4 @@
 #include "../../include/test_common.hpp"
-#include <string>
 #include <cassert>
 
 // Declare inline logging callables so we can call INFO(...), ERROR(...), etc.
