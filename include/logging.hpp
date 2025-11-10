@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <string>
 #include <utility>
-#include <iostream>
+#include <sstream>
 
 #include "utils.hpp"
 
@@ -16,38 +16,29 @@ namespace cpp_logging {
                 int code{};
                 std::string label;
                 RGB color;
+                std::string format = "[{label}]: {context}";
             };
         
             Logger();
-            void create_type(const std::string& type_name, int code, RGB color, std::string label = {});
-            void create_type(const std::string& type_name, int code, int r, int g, int b, std::string label = {});
-        
+            void create_type(const std::string& type_name, int code, RGB color, std::string label = {}, std::string format = {});
+            void create_type(const std::string& type_name, int code, int r, int g, int b, std::string label = {}, std::string format = {});
+            void set_format(const std::string& type_name, const std::string& format);
             template <typename... Args>
             void log_by_type(const std::string& type_name, Args&&... args);
         
         private:
             std::unordered_map<std::string, Type> _types;
+            static std::string render_format(const Type& type, const std::string& message, const std::string& fmt);
+            void log_by_type_message(const std::string& type_name, const std::string& message);
     };
     
     Logger& implicit_logger();
     
     template <typename... Args>
     void Logger::log_by_type(const std::string& type_name, Args&&... args) {
-        auto it = _types.find(type_name);
-        if (it == _types.end())
-            return;
-    
-        const Type& t = it->second;
-    
-    #if defined(LOG_LEVEL)
-        if (t.code > LOG_LEVEL)
-            return;
-    #endif
-    
-        std::ostream& os = std::cerr;
-        os << '[' << ansi_fg_rgb(t.color) << t.label << ansi_reset() << "] ";
-        (os << ... << std::forward<Args>(args)) << '\n';
-        os.flush();
+        std::ostringstream oss;
+        (oss << ... << std::forward<Args>(args));
+        log_by_type_message(type_name, oss.str());
     }
 
 }
@@ -80,6 +71,18 @@ namespace cpp_logging {
 #define LOG_DEFINE_TYPE_LABELED_RGB(NAME, CODE, RGBVAL, LABEL) \
     (::cpp_logging::implicit_logger().create_type(#NAME, (CODE), (RGBVAL), (LABEL)));
 
+#define LOG_DEFINE_TYPE_FORMAT(NAME, CODE, R, G, B, FORMAT) \
+    (::cpp_logging::implicit_logger().create_type(#NAME, (CODE), (R), (G), (B), std::string(), (FORMAT)))
+
+#define LOG_DEFINE_TYPE_LABELED_FORMAT(NAME, CODE, R, G, B, LABEL, FORMAT) \
+    (::cpp_logging::implicit_logger().create_type(#NAME, (CODE), (R), (G), (B), (LABEL), (FORMAT)))
+
+#define LOG_DEFINE_TYPE_RGB_FORMAT(NAME, CODE, RGBVAL, FORMAT) \
+    (::cpp_logging::implicit_logger().create_type(#NAME, (CODE), (RGBVAL), std::string(), (FORMAT)))
+
+#define LOG_DEFINE_TYPE_LABELED_RGB_FORMAT(NAME, CODE, RGBVAL, LABEL, FORMAT) \
+    (::cpp_logging::implicit_logger().create_type(#NAME, (CODE), (RGBVAL), (LABEL), (FORMAT)))
+
 #define LOG_UPDATE_TYPE(NAME, CODE, R, G, B) \
     (::cpp_logging::implicit_logger().create_type(#NAME, (CODE), (R), (G), (B)))
 
@@ -91,5 +94,17 @@ namespace cpp_logging {
 
 #define LOG_UPDATE_TYPE_LABELED_RGB(NAME, CODE, RGBVAL, LABEL) \
     (::cpp_logging::implicit_logger().create_type(#NAME, (CODE), (RGBVAL), (LABEL)))
+
+#define LOG_UPDATE_TYPE_FORMAT(NAME, CODE, R, G, B, FORMAT) \
+    (::cpp_logging::implicit_logger().create_type(#NAME, (CODE), (R), (G), (B), std::string(), (FORMAT)))
+
+#define LOG_UPDATE_TYPE_LABELED_FORMAT(NAME, CODE, R, G, B, LABEL, FORMAT) \
+    (::cpp_logging::implicit_logger().create_type(#NAME, (CODE), (R), (G), (B), (LABEL), (FORMAT)))
+
+#define LOG_UPDATE_TYPE_RGB_FORMAT(NAME, CODE, RGBVAL, FORMAT) \
+    (::cpp_logging::implicit_logger().create_type(#NAME, (CODE), (RGBVAL), std::string(), (FORMAT)))
+
+#define LOG_UPDATE_TYPE_LABELED_RGB_FORMAT(NAME, CODE, RGBVAL, LABEL, FORMAT) \
+    (::cpp_logging::implicit_logger().create_type(#NAME, (CODE), (RGBVAL), (LABEL), (FORMAT)))
 
 #endif // CPP_LOGGER_LOGGING_HPP

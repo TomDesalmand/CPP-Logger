@@ -25,6 +25,21 @@ static bool test_create_and_call_macros_impl() {
     LOG_DEFINE_TYPE_LABELED_RGB(CUSTOM, 1, (RGB{123, 45, 67}), "CUSTOM_LABEL");
     CUSTOM("CustomMsg", '#', 77);
 
+    LOG_DEFINE_TYPE_FORMAT(INFO, 1, 0, 200, 100, "[{label}] >> {context}");
+    INFO("FormattedInfo: ", 42);
+
+    LOG_DEFINE_TYPE_LABELED_FORMAT(DEBUG, 2, 150, 150, 150, "DEBUG", "<{label}> {context}");
+    DEBUG("DbgFmt", '-', 7);
+
+    LOG_DEFINE_TYPE_LABELED_RGB_FORMAT(CUSTOM, 1, (RGB{123,45,67}), "CUSTOM_LABEL", "{label}:{context}");
+    CUSTOM("CustFmt:", 99);
+
+    LOG_UPDATE_TYPE_LABELED_FORMAT(WARN,  1, 255, 165,   0, "WARN", "!!! {label} >>> {context} !!!");
+    WARN("Be careful, code=", 77);
+
+    LOG_DEFINE_TYPE_RGB_FORMAT(INFO, 1, (RGB{10,20,30}), "[RGB_INFO] {context}");
+    INFO("RGB-formatted-info:", 1234);
+
     assert(true);
 
     return true;
