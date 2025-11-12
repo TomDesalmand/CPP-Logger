@@ -5,8 +5,17 @@
 // C++ standard library includes //
 #include <utility>
 #include <iostream>
+#include <vector>
 
 namespace cpp_logging {
+    
+    static std::string trim(const std::string& s) {
+        const char* ws = " \t\n\r";
+        std::size_t a = s.find_first_not_of(ws);
+        if (a == std::string::npos) return {};
+        std::size_t b = s.find_last_not_of(ws);
+        return s.substr(a, b - a + 1);
+    }
 
     Logger::Logger() {
         enable_virtual_terminal_processing_once();
@@ -36,6 +45,79 @@ namespace cpp_logging {
             std::move(format)
         );
     }
+    
+    static bool parse_rgb_payload(const std::string& payload, RGB& out_rgb) {
+        std::vector<int> nums;
+        std::size_t p = 0;
+        const std::string trimmed_payload = trim(payload);
+        while (p < trimmed_payload.size()) {
+            std::size_t comma = trimmed_payload.find(',', p);
+            std::string tok = (comma == std::string::npos) ? trimmed_payload.substr(p) : trimmed_payload.substr(p, comma - p);
+            tok = trim(tok);
+            try {
+                if (!tok.empty())
+                    nums.push_back(std::stoi(tok));
+            } catch (...) {
+                nums.clear();
+                break;
+            }
+            if (comma == std::string::npos) break;
+            p = comma + 1;
+        }
+        if (nums.size() >= 3) {
+            out_rgb.r = static_cast<std::uint8_t>(nums[0]);
+            out_rgb.g = static_cast<std::uint8_t>(nums[1]);
+            out_rgb.b = static_cast<std::uint8_t>(nums[2]);
+            return true;
+        }
+        return false;
+    }
+
+    static void handle_rgb_token(const std::string& key, std::string& out) {
+        std::string payload = (key.size() > 4) ? key.substr(4) : "";
+        payload = trim(payload);
+        if (payload == "reset") {
+            out += ansi_reset();
+        } else if (!payload.empty()) {
+            RGB rgb{};
+            if (parse_rgb_payload(payload, rgb)) {
+                out += ansi_fg_rgb(rgb);
+            } else {
+                out.append("{").append(key).append("}");
+            }
+        } else {
+            out.append("{").append(key).append("}");
+        }
+    }
+
+    static std::string render_inline_tokens(const Logger::Type& /*type*/, const std::string& input, const std::string& label_colored) {
+        std::string out;
+        out.reserve(input.size());
+        std::size_t pos = 0;
+        while (pos < input.size()) {
+            std::size_t brace_pos = input.find('{', pos);
+            if (brace_pos == std::string::npos) {
+                out.append(input, pos, input.size() - pos);
+                break;
+            }
+            out.append(input, pos, brace_pos - pos);
+            std::size_t end_brace = input.find('}', brace_pos + 1);
+            if (end_brace == std::string::npos) {
+                out.append(input, brace_pos, input.size() - brace_pos);
+                break;
+            }
+            std::string key = input.substr(brace_pos + 1, end_brace - brace_pos - 1);
+            if (key == "label") {
+                out += label_colored;
+            } else if (key == "rgb" || key.compare(0, 4, "rgb,") == 0) {
+                handle_rgb_token(key, out);
+            } else {
+                out.append(input, brace_pos, end_brace - brace_pos + 1);
+            }
+            pos = end_brace + 1;
+        }
+        return out;
+    }
 
     std::string Logger::render_format(const Type& type, const std::string& message, const std::string& fmt) {
         std::string out;
@@ -57,10 +139,13 @@ namespace cpp_logging {
                 break;
             }
             std::string key = fmt.substr(brace_pos + 1, end_brace - brace_pos - 1);
+
             if (key == "label") {
                 out += label_colored;
             } else if (key == "context") {
-                out += message;
+                out += render_inline_tokens(type, message, label_colored);
+            } else if (key == "rgb" || key.compare(0, 4, "rgb,") == 0) {
+                handle_rgb_token(key, out);
             } else {
                 out.append(fmt, brace_pos, end_brace - brace_pos + 1);
             }

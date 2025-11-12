@@ -28,6 +28,7 @@ namespace cpp_logging {
         
         private:
             std::unordered_map<std::string, Type> _types;
+            static std::string trim(const std::string& s);
             static std::string render_format(const Type& type, const std::string& message, const std::string& fmt);
             void log_by_type_message(const std::string& type_name, const std::string& message);
     };
