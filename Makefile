@@ -1,6 +1,3 @@
-# Makefile - cleaned and refactored for readability
-# Preserves original behavior while improving organization and comments.
-
 # ---------------------------------------------------------------------
 # Platform detection
 # ---------------------------------------------------------------------
@@ -19,7 +16,7 @@ LOG_LEVEL  ?= 0
 # Include project headers and expose LOG_LEVEL to sources
 CPPFLAGS  += -DLOG_LEVEL=$(LOG_LEVEL) -I include
 
-# On macOS with Homebrew (Apple Silicon), add Homebrew include path
+# On macOS with Homebrew, add Homebrew include path
 ifeq ($(UNAME_S),Darwin)
 CPPFLAGS += -I/opt/homebrew/include
 endif
