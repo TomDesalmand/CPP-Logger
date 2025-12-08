@@ -138,8 +138,7 @@ for f in $SOURCES; do
   if [ -f "$f" ]; then
     _put "// ===== Begin: $f ====="
     sed -E '/^[[:space:]]*#include[[:space:]]*"[^\"]*"/d' "$f" | \
-      sed -E '/^[[:space:]]*(template|using|struct|class|namespace|#)/! s@^([[:space:]]*)([A-Za-z_][A-Za-z_0-9:<>&* \t]*[[:space:]]+[A-Za-z_][A-Za-z_0-9:<>]*[[:space:]]*\(.*\)[[:space:]]*\{)@\1inline \2@'
-    _put "// ===== End: $f ====="
+    perl -pe 'unless (/^[[:space:]]*}/ || /^[[:space:]]*(?:template|using|struct|class|namespace|#|if|for|while|switch|catch|do|else|return|case|break|continue|goto|try)\b/) { unless (/\binline\b/) { if (/\)\s*(?:[^;{]*?)\s*\{/) { s/^([[:space:]]*)/$1inline / } } }'    _put "// ===== End: $f ====="
     _put ""
   fi
 done
