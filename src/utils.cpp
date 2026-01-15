@@ -44,3 +44,11 @@ std::string ansi_fg_rgb(const RGB& c) {
 const char* ansi_reset() noexcept {
     return "\x1b[0m";
 }
+
+const char* ansi_bold() noexcept {
+    return "\x1b[1m";
+}
+
+const char* ansi_unbold() noexcept {
+    return "\x1b[22m";
+}

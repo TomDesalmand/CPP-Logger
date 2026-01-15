@@ -12,7 +12,7 @@ static bool test_rgb_format_impl() {
         RGBFMT,
         1,
         255, 255, 255,
-        R"([{label}]: {context} {rgb,255,0,0}r{rgb,0,255,0}g{rgb,0,0,255}b{rgb,reset})"
+        "[{label}]: {context} {bold}{rgb,255,0,0}r{rgb,0,255,0}g{rgb,0,0,255}b{rgb,reset}{unbold}"
     );
 
     RGBFMT("The following {rgb,255, 195, 0}items{rgb,reset} were attached by the user.");
@@ -24,10 +24,10 @@ static bool test_rgb_format_impl() {
         1,
         255, 255, 255,
         "RGB_EXTRA",
-        R"([{label}]: {context} {rgb,255,0,0,0}x{rgb,reset})"
+        "[{label}]: {context} {rgb,255,0,0,0}x{rgb,reset}"
     );
 
-    RGBFMT_EXTRA("Extra-values RGB token test");
+    RGBFMT_EXTRA("Extra-values {bold}RGB{unbold} token test");
 
     assert(true);
     return true;

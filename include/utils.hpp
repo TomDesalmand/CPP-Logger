@@ -20,6 +20,9 @@ struct RGB {
 void enable_virtual_terminal_processing_once();
 std::string ansi_fg_rgb(const RGB& color);
 const char* ansi_reset() noexcept;
+const char* ansi_bold() noexcept;
+const char* ansi_unbold() noexcept;
+
 void log_test();
 
 #endif // CPP_LOGGER_UTILS_HPP
