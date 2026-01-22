@@ -14,6 +14,5 @@ int main() {
     assert(test_log_level_macro());
     assert(test_rgb_format());
     assert(test_time());
-    assert(test_file());
     return 0;
 }
