@@ -6,7 +6,6 @@ extern bool test_ansi_helpers();
 extern bool test_log_level_macro();
 extern bool test_rgb_format();
 extern bool test_time();
-extern bool test_file();
 
 int main() {
     assert(test_create_and_call_macros());
