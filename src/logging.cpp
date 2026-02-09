@@ -143,6 +143,8 @@ namespace cpp_logging {
                 out += current_time_str();
             } else if (key == "file") {
                 out += file ? extract_filename(file) : "";
+            } else if (key == "filepath") {
+                out += file ? file : "";
             } else if (key == "function") {
                 out += function ? function : "";
             } else if (key == "line") {
@@ -188,6 +190,8 @@ namespace cpp_logging {
                 out += current_time_str();
             } else if (key == "file") {
                 out += file ? extract_filename(file) : "";
+            } else if (key == "filepath") {
+                out += file ? file : "";
             } else if (key == "function") {
                 out += function ? function : "";
             } else if (key == "line") {

@@ -14,6 +14,8 @@ static bool test_trace_implementation() {
     };
     loop_function();
     
+    TRACE("This log should give the full path to the logging call file path inlcuded: {filepath}:{function}:{line}");
+    
     assert(true);
     return true;
 }
