@@ -1,17 +1,17 @@
 #include "../include/test_common.hpp"
 #include <cassert>
 
-extern bool test_create_and_call_macros();
-extern bool test_ansi_helpers();
-extern bool test_log_level_macro();
-extern bool test_rgb_format();
+extern bool test_basic();
+extern bool test_trace();
+extern bool test_loglevel();
+extern bool test_rgb();
 extern bool test_time();
 
 int main() {
-    assert(test_create_and_call_macros());
-    assert(test_ansi_helpers());
-    assert(test_log_level_macro());
-    assert(test_rgb_format());
+    assert(test_basic());
+    assert(test_trace());
+    assert(test_loglevel());
+    assert(test_rgb());
     assert(test_time());
     return 0;
 }

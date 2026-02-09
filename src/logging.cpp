@@ -10,6 +10,7 @@
 #include <ctime>
 #include <iomanip>
 #include <sstream>
+#include <string>
 
 namespace cpp_logging {
     
@@ -109,7 +110,17 @@ namespace cpp_logging {
         return oss.str();
     }
 
-    static std::string render_inline_tokens(const Logger::Type& /*type*/, const std::string& input, const std::string& label_colored) {
+    static std::string extract_filename(const char* filepath) {
+        if (!filepath) return "";
+        std::string path_str(filepath);
+        std::size_t last_slash = path_str.find_last_of("/\\");
+        if (last_slash != std::string::npos) {
+            return path_str.substr(last_slash + 1);
+        }
+        return path_str;
+    }
+
+    static std::string render_inline_tokens(const Logger::Type& /*type*/, const std::string& input, const std::string& label_colored, const char* file = nullptr, const char* function = nullptr, int line = -1) {
         std::string out;
         out.reserve(input.size());
         std::size_t pos = 0;
@@ -130,6 +141,12 @@ namespace cpp_logging {
                 out += label_colored;
             } else if (key == "time") {
                 out += current_time_str();
+            } else if (key == "file") {
+                out += file ? extract_filename(file) : "";
+            } else if (key == "function") {
+                out += function ? function : "";
+            } else if (key == "line") {
+                out += (line >= 0) ? std::to_string(line) : "";
             } else if (key == "bold") {
                 out += ansi_bold();
             } else if (key == "unbold") {
@@ -144,9 +161,9 @@ namespace cpp_logging {
         return out;
     }
 
-    std::string Logger::render_format(const Type& type, const std::string& message, const std::string& fmt) {
+    std::string Logger::render_format(const Type& type, const std::string& message, const std::string& fmt, const char* file, const char* function, int line) {
         std::string out;
-        out.reserve(fmt.size() + message.size() + type.label.size() + 32);
+        out.reserve(fmt.size() + message.size() + type.label.size() + 128);
 
         const std::string label_colored = std::string(ansi_fg_rgb(type.color)) + type.label + ansi_reset();
 
@@ -169,8 +186,14 @@ namespace cpp_logging {
                 out += label_colored;
             } else if (key == "time") {
                 out += current_time_str();
+            } else if (key == "file") {
+                out += file ? extract_filename(file) : "";
+            } else if (key == "function") {
+                out += function ? function : "";
+            } else if (key == "line") {
+                out += (line >= 0) ? std::to_string(line) : "";
             } else if (key == "context") {
-                out += render_inline_tokens(type, message, label_colored);
+                out += render_inline_tokens(type, message, label_colored, file, function, line);
             } else if (key == "bold") {
                 out += ansi_bold();
             } else if (key == "unbold") {
@@ -193,7 +216,7 @@ namespace cpp_logging {
             it->second.format = format;
     }
 
-    void Logger::log_by_type_message(const std::string& type_name, const std::string& message) {
+    void Logger::log_by_type_message(const std::string& type_name, const std::string& message, const char* file, const char* function, int line) {
         auto it = _types.find(type_name);
         if (it == _types.end())
             return;
@@ -203,7 +226,7 @@ namespace cpp_logging {
             return;
     #endif
         const std::string& fmt = type.format;
-        std::string formatted = render_format(type, message, fmt);
+        std::string formatted = render_format(type, message, fmt, file, function, line);
         std::ostream& os = std::cerr;
         os << formatted << '\n';
         os.flush();
